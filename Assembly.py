@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- 
-_metaclass_ = type
 INDEX = 0
+_metaclass_ = type
 class Assembly:
 	def _init_(self):
 		from part import *
@@ -62,7 +62,7 @@ class Assembly:
 	def stepSetup(self, steps,args):
 		from step import *
 		self.model.ExplicitDynamicsStep(name='Step-1', previous='Initial', 
-			massScaling=((SEMI_AUTOMATIC, MODEL, AT_BEGINNING, 10000.0, 0.0, None, 
+			massScaling=((SEMI_AUTOMATIC, MODEL, AT_BEGINNING, 1000.0, 0.0, None, 
 			0, 0, 0.0, 0.0, 0, None), ))
 		self.model.fieldOutputRequests['F-Output-1'].setValues(variables=(
 			'S', 'SVAVG', 'PE', 'PEVAVG', 'PEEQ', 'PEEQVAVG', 'LE', 'U', 'V', 'A', 
@@ -70,21 +70,24 @@ class Assembly:
 		for ii in range(2,steps+1):
 			self.model.ExplicitDynamicsStep(name='Step-'+str(ii), previous='Step-'+str(ii-1))
 
-	def setBC(self,BCs):
+	def setBC(self,BCs,args):
 		pass
 		
 	def setLoads(self,loads):
 		pass
 		
-	def makeAssembly(self,shapes,materials,positions,inits,steps,BCs,Loads,args):
+	def makeAssembly(self,shapes,materials,positions,inits,steps,BCs,Loads,meshSize,args):
 		self._init_()
 		self.setupShapes(shapes)
-		self.setupMaterials(tools[0],parts[1])
-		self.setPositions(positions)
-		self.interactions(inits)
-		self.stepSetup(steps)
-		self.setBC(BCs,args[0])
+		self.setupMaterials(materials)
+		self.addInstance(meshSize)
+		self.stepSetup(1,args)
+		self.setPositions(positions,args)
+		self.toolsRigid(args)
+		self.interactions(inits,args)
+		self.setBC(BCs = BCs,args=args)
 		self.setLoads(Loads)
+		self.submitJob()
 	def submitJob(self):
 		from job import *
 		jobname = 'Job-'+self.modelname

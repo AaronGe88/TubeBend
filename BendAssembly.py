@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*- 
 from Assembly import *
+from math import *
 class BendAssembly(Assembly):
 	def setupMaterials(self,materials):
 		from section import UNIFORM
@@ -85,7 +86,9 @@ class BendAssembly(Assembly):
 			a.Instance(name=instance.partName+'-1', part=p, dependent=ON)
 			if instance.partName=='Part-Clamp' or instance.partName=='Part-Insert' :
 				a.translate(instanceList=(instance.partName+'-1', ), vector=positions['insert'])
-			else:
+			elif instance.partName == 'Part-Wiper':
+				a.rotate(instanceList=('Part-Wiper-1', ), axisPoint=(0.0, 0.0, 0.0), 
+					axisDirection=(0.0, 1.0, 0.0), angle=positions['wiper'])
 				pass
 			indexPositions += 1
 		# for instance in self.innertools:
@@ -213,21 +216,54 @@ class BendAssembly(Assembly):
 				# interactionProperty='IntProp-SMALL', initialClearance=OMIT, datumAxis=None, 
 				# clearanceRegion=None)
 			# INTINDEX = INTINDEX + 1
+	def setBC(self,BCs,args):
+		from step import *
+		from load import *
+		angle = BCs['angle']
+		assist = args['assist'] * (self.shapes['bendR']+self.shapes['outDiameter']/2)*angle
+		self.model.TabularAmplitude(name='Amp-1', timeSpan=STEP, 
+			smooth=0.05, data=((0.0, 0.0), (0.1, 0.05),(0.7,0.7),(.8,.9), (0.9, 1.0), (1.0, 
+			1.0)))
+		a = self.model.rootAssembly
+		region = a.instances['Part-BendDie-1'].sets['Set-RP']
+		self.model.DisplacementBC(name='BC-Bend', createStepName='Step-1', 
+			region=region, u1=0.0, u2=0.0, u3=0.0, ur1=0.0, ur2=-angle, ur3=0.0, 
+			amplitude='Amp-1', fixed=OFF, distributionType=UNIFORM, fieldName='', 
+			localCsys=None)
+		region = a.instances['Part-Press-1'].sets['Set-RP']
+		self.model.DisplacementBC(name='BC-Press', createStepName='Step-1', 
+			region=region, u1=UNSET, u2=0.0, u3=-assist, ur1=0.0, ur2=0.0, ur3=0.0, 
+			amplitude='Amp-1', fixed=OFF, distributionType=UNIFORM, fieldName='', 
+			localCsys=None)
+		region = a.instances['Part-Wiper-1'].sets['Set-RP']
+		self.model.DisplacementBC(name='BC-Wiper', createStepName='Step-1', 
+			region=region, u1=0.0, u2=0.0, u3=0.0, ur1=0.0, ur2=0.0, ur3=0.0, 
+			amplitude=UNSET, fixed=OFF, distributionType=UNIFORM, fieldName='', 
+			localCsys=None)
+	def setLoads(self,loads):
+		from step import *
+		from load import *
+		self.model.TabularAmplitude(name='Amp-2', timeSpan=STEP, smooth=0.1, 
+			data=((0.0, 0.0), (0.05, 0.3), (0.1, 1.0), (1.0, 1.0)))
+		a = self.model.rootAssembly
+		region = a.instances['Part-Press-1'].sets['Set-RP']
+		self.model.ConcentratedForce(name='Load-1', createStepName='Step-1', 
+			region=region, cf1=loads['Press'], amplitude='Amp-2', 
+			distributionType=UNIFORM, field='', localCsys=None)
 		
-tools = [7.85e-7,210000.0,.3]
+tools = [7.85e-9,210000.0,.3]
 parts = [7.85e-9,210000.0,.3,750.0,.06,.24,1.0]		
-shapes = {'bendR':220.0,'outDiameter':40.0,'thick':1.0,'mandralGap':.8,'toolGap':0.0,'ballThick':10.0,}
-positions = {'insert':(0,0,-200),'tube':(0,0,-240),'ball':(-shapes['bendR'],0,-12),'mandral':(0,0,0)}
+shapes = {'bendR':220.0,'outDiameter':40.0,'thick':1.0,'mandralGap':.8,'toolGap':0.1,'ballThick':10.0,}
+positions = {'insert':(0,0,-200),'tube':(0,0,-240),'ball':(-shapes['bendR'],0,-12),'mandral':(0,0,0),'wiper':0.5}
 material={'tool':tools,'part':parts}
 meshSize = {'pressDie':3.0/0.6,'tube':1.0/0.6}
 inits={'0.5':.5,'0.125':.125}
-args={}
-tubeBend = BendAssembly()
-tubeBend._init_()
-tubeBend.setupShapes(shapes)
-tubeBend.setupMaterials(material)
-tubeBend.addInstance(meshSize)
-tubeBend.stepSetup(1,args)
-tubeBend.setPositions(positions,args)
-tubeBend.toolsRigid(args)
-tubeBend.interactions(inits,args)
+arg={'assist':.8}
+Load={'Press':10000}
+for ii in range(15,105,15):
+	fi = float(ii)
+	BC={'angle':fi*pi/180}
+	tubeBend = BendAssembly()
+	tubeBend.makeAssembly(shapes=shapes,materials=material,positions=positions,\
+		inits=inits,steps=1,BCs=BC,Loads=Load,meshSize=meshSize,args=arg)
+
