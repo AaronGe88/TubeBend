@@ -1,31 +1,27 @@
 # -*- coding: utf-8 -*- 
 INDEX = 0
+from part import *
+from section import *
+from regionToolset import *
+from displayGroupMdbToolset import *
+from part import *
+from material import *
+from assembly  import *
+from step import *
+from interaction import *
+from load import *
+from mesh import *
+from optimization import *
+from job import *
+from sketch import *
+from visualization import *
+from xyPlot import *
+from connectorBehavior import *
 _metaclass_ = type
 class Assembly:
-	def _init_(self):
-		from part import *
-		from section import *
-		from regionToolset import *
-		from displayGroupMdbToolset import *
-		from part import *
-		from material import *
-		from assembly  import *
-		from step import *
-		from interaction import *
-		from load import *
-		from mesh import *
-		from optimization import *
-		from job import *
-		from sketch import *
-		from visualization import *
-		from xyPlot import *
-		from connectorBehavior import *
-		Mdb()
-		global INDEX
-		self.modelname = 'Model-' +str(INDEX)
-		mdb.models.changeKey(fromName='Model-1', toName='Model-'+str(INDEX))
-		model = mdb.models[self.modelname]
-		self.model = model
+	def __init__(self,modelname):
+		self.model = mdb.models[modelname]
+		self.modelname = modelname
 		self.tools = []
 		self.innertools=[]
 		self.parts = []
@@ -62,7 +58,7 @@ class Assembly:
 	def stepSetup(self, steps,args):
 		from step import *
 		self.model.ExplicitDynamicsStep(name='Step-1', previous='Initial', 
-			massScaling=((SEMI_AUTOMATIC, MODEL, AT_BEGINNING, 1000.0, 0.0, None, 
+			massScaling=((SEMI_AUTOMATIC, MODEL, AT_BEGINNING, 1000, 0.0, None, 
 			0, 0, 0.0, 0.0, 0, None), ))
 		self.model.fieldOutputRequests['F-Output-1'].setValues(variables=(
 			'S', 'SVAVG', 'PE', 'PEVAVG', 'PEEQ', 'PEEQVAVG', 'LE', 'U', 'V', 'A', 
@@ -76,18 +72,6 @@ class Assembly:
 	def setLoads(self,loads):
 		pass
 		
-	def makeAssembly(self,shapes,materials,positions,inits,steps,BCs,Loads,meshSize,args):
-		self._init_()
-		self.setupShapes(shapes)
-		self.setupMaterials(materials)
-		self.addInstance(meshSize)
-		self.stepSetup(1,args)
-		self.setPositions(positions,args)
-		self.toolsRigid(args)
-		self.interactions(inits,args)
-		self.setBC(BCs = BCs,args=args)
-		self.setLoads(Loads)
-		self.submitJob()
 	def submitJob(self):
 		from job import *
 		jobname = 'Job-'+self.modelname
@@ -100,5 +84,16 @@ class Assembly:
         activateLoadBalancing=False, multiprocessingMode=DEFAULT, numCpus=1)
 		mdb.jobs[jobname].submit(consistencyChecking=OFF)
 		mdb.jobs[jobname].waitForCompletion()
-		global INDEX
-		INDEX = INDEX + 1
+		
+	def makeIt(self,shapes,materials,positions,inits,steps,BCs,Loads,meshSize,args):
+		self.setupShapes(shapes)
+		self.setupMaterials(materials)
+		self.addInstance(meshSize)
+		self.stepSetup(1,args)
+		self.setPositions(positions,args)
+		self.toolsRigid(args)
+		self.interactions(inits,args)
+		self.setBC(BCs = BCs,args=args)
+		self.setLoads(Loads)
+		self.submitJob()
+	

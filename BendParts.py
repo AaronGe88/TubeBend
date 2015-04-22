@@ -2,8 +2,8 @@
 from PartRoot import *
 _metaclass_ = type
 class Insert(Tool):
-	def _init_(self):
-		Tool._init_(self)
+	def __init__(self,model):
+		Tool.__init__(self,model)
 		self.partName = 'Part-Insert'
 		self.friction = .5
 	
@@ -32,8 +32,8 @@ class Insert(Tool):
 		p.Surface(side1Faces=side1Faces, name='Surf-Outer')
 
 class Clamp(Tool):
-	def _init_(self):
-		Tool._init_(self)
+	def __init__(self,model):
+		Tool.__init__(self,model)
 		self.partName = 'Part-Clamp'
 		self.friction = .5
 	def geometry(self):
@@ -65,8 +65,8 @@ class Clamp(Tool):
 		p.Set(referencePoints=refPoints, name='Set-RP')
 
 class BendDie(Tool):
-	def _init_(self):
-		Tool._init_(self)
+	def __init__(self,model):
+		Tool.__init__(self,model)
 		self.partName = 'Part-BendDie'
 		self.friction = .125
 	def geometry(self):
@@ -110,8 +110,8 @@ class BendDie(Tool):
 		p.Surface(side1Faces=side1Faces, name='Surf-Outer')
 
 class Wiper(Tool):
-	def _init_(self):
-		Tool._init_(self)
+	def __init__(self,model):
+		Tool.__init__(self,model)
 		self.partName = 'Part-Wiper'
 		self.friction = .5
 	
@@ -140,8 +140,8 @@ class Wiper(Tool):
 		p.Surface(side1Faces=side1Faces, name='Surf-Outer')
 
 class Press(Tool):
-	def _init_(self):
-		Tool._init_(self)
+	def __init__(self,model):
+		Tool.__init__(self,model)
 		self.partName = 'Part-Press'
 		self.friction = .5
 	def geometry(self):
@@ -173,8 +173,8 @@ class Press(Tool):
 		p.Set(referencePoints=refPoints, name='Set-RP')
 		
 class Tube(Part):
-	def _init_(self):
-		Part._init_(self)
+	def __init__(self,model):
+		Part.__init__(self,model)
 		self.partName = 'Part-Tube'
 	def geometry(self):
 		from part import STANDALONE
@@ -211,7 +211,7 @@ class Tube(Part):
 # shapes = {'bendR':220,'outDiameter':40,'toolGap':.1}
 
 # insert = BendDie()
-# insert._init_()
+# insert.__init__()
 # insert.setModel(model)
 # insert.setShape(shapes)
 # insert.geometry()

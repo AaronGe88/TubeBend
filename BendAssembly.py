@@ -47,33 +47,33 @@ class BendAssembly(Assembly):
 		from BendParts import Wiper
 		from BendParts import Press
 		
-		insert = Insert()
+		insert = Insert(self.model)
 		RPInsert = (-self.shapes['bendR'], 0.0, (self.shapes['bendR']-self.shapes['outDiameter']/2)/2)
-		insert.makeIt(self.model,self.shapes,RPInsert,'Section-Tool',meshSizes['pressDie'])
+		insert.makeIt(self.shapes,RPInsert,'Section-Tool',meshSizes['pressDie'])
 		self.tools.append(insert)
 		
-		clamp = Clamp()
+		clamp = Clamp(self.model)
 		RPClamp = (-self.shapes['bendR'], 0.0, (self.shapes['bendR']-self.shapes['outDiameter']/2)/2)
-		clamp.makeIt(self.model,self.shapes,RPClamp,'Section-Tool',meshSizes['pressDie'])
+		clamp.makeIt(self.shapes,RPClamp,'Section-Tool',meshSizes['pressDie'])
 		self.tools.append(clamp)
 		
-		die = BendDie()
+		die = BendDie(self.model)
 		RPDie = (.0,.0,.0)
-		die.makeIt(self.model,self.shapes,RPDie,'Section-Tool',meshSizes['pressDie'])
+		die.makeIt(self.shapes,RPDie,'Section-Tool',meshSizes['pressDie'])
 		self.tools.append(die)
 		
-		wiper = Wiper()
+		wiper = Wiper(self.model)
 		RPWiper = (0,0,0)
-		wiper.makeIt(self.model,self.shapes,RPWiper,'Section-Tool',meshSizes['pressDie'])
+		wiper.makeIt(self.shapes,RPWiper,'Section-Tool',meshSizes['pressDie'])
 		self.tools.append(wiper)
 		
-		press = Press()
+		press = Press(self.model)
 		RPPress = (-self.shapes['bendR'], 0.0, 7.5*self.shapes['outDiameter'])
-		press.makeIt(self.model,self.shapes,RPPress,'Section-Tool',meshSizes['pressDie'])
+		press.makeIt(self.shapes,RPPress,'Section-Tool',meshSizes['pressDie'])
 		self.tools.append(press)
 		
-		tube = Tube()
-		tube.makeIt(self.model,self.shapes,'Section-Tube',meshSizes['tube'])
+		tube = Tube(self.model)
+		tube.makeIt(self.shapes,'Section-Tube',meshSizes['tube'])
 		self.parts.append(tube)
 		
 	def setPositions(self,positions,args):
@@ -222,7 +222,7 @@ class BendAssembly(Assembly):
 		angle = BCs['angle']
 		assist = args['assist'] * (self.shapes['bendR']+self.shapes['outDiameter']/2)*angle
 		self.model.TabularAmplitude(name='Amp-1', timeSpan=STEP, 
-			smooth=0.05, data=((0.0, 0.0), (0.1, 0.05),(0.7,0.7),(.8,.9), (0.9, 1.0), (1.0, 
+			smooth=0.05, data=((0.0, 0.0), (0.1, 0.05),(0.7,0.6),(.8,.9), (0.9,.95), (1.0, 
 			1.0)))
 		a = self.model.rootAssembly
 		region = a.instances['Part-BendDie-1'].sets['Set-RP']
@@ -251,19 +251,7 @@ class BendAssembly(Assembly):
 			region=region, cf1=loads['Press'], amplitude='Amp-2', 
 			distributionType=UNIFORM, field='', localCsys=None)
 		
-tools = [7.85e-9,210000.0,.3]
-parts = [7.85e-9,210000.0,.3,750.0,.06,.24,1.0]		
-shapes = {'bendR':220.0,'outDiameter':40.0,'thick':1.0,'mandralGap':.8,'toolGap':0.1,'ballThick':10.0,}
-positions = {'insert':(0,0,-200),'tube':(0,0,-240),'ball':(-shapes['bendR'],0,-12),'mandral':(0,0,0),'wiper':0.5}
-material={'tool':tools,'part':parts}
-meshSize = {'pressDie':3.0/0.6,'tube':1.0/0.6}
-inits={'0.5':.5,'0.125':.125}
-arg={'assist':.8}
-Load={'Press':10000}
-for ii in range(15,105,15):
-	fi = float(ii)
-	BC={'angle':fi*pi/180}
-	tubeBend = BendAssembly()
-	tubeBend.makeAssembly(shapes=shapes,materials=material,positions=positions,\
-		inits=inits,steps=1,BCs=BC,Loads=Load,meshSize=meshSize,args=arg)
+
+
+	
 

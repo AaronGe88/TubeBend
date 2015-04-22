@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*- 
 _metaclass_ = type
 class Tool:
-	def _init_(self):
-		self.model = 0
+	def __init__(self,model):
+		self.model = model
 		self.shape = (0,0,0)
 	def setModel(self,model):
 		self.model = model
@@ -36,9 +36,7 @@ class Tool:
 		p = self.model.parts[self.partName]
 		p.seedPart(size=size, deviationFactor=0.1, minSizeFactor=0.1)
 		p.generateMesh()
-	def makeIt(self,model,shape,RP,sectName,meshSize):
-		self._init_()
-		self.setModel(model)
+	def makeIt(self,shape,RP,sectName,meshSize):
 		self.setShape(shape)
 		self.geometry()
 		self.setRP(RP)
@@ -49,11 +47,9 @@ class Tool:
 
 _metaclass_ = type
 class Part:
-	def _init_(self):
-		self.model = 0
-		self.shape = (0,0,0)
-	def setModel(self,model):
+	def __init__(self,model):
 		self.model = model
+		self.shape = (0,0,0)
 	def setShape(self,shape):
 		self.shape = shape
 	def setMaterial(self,sectName):
@@ -78,9 +74,7 @@ class Part:
 		p.seedPart(size=size, deviationFactor=0.1, minSizeFactor=0.1)
 		p.generateMesh()
 	
-	def makeIt(self,model,shape,sectName,meshSize):
-		self._init_()
-		self.setModel(model)
+	def makeIt(self,shape,sectName,meshSize):
 		self.setShape(shape)
 		self.geometry()
 		self.setMaterial(sectName)
