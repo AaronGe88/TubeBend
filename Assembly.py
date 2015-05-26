@@ -56,7 +56,7 @@ class Assembly:
 		pass
 	
 	def stepSetup(self, steps,args):
-		from step import *
+		
 		self.model.ExplicitDynamicsStep(name='Step-1', previous='Initial', 
 			massScaling=((SEMI_AUTOMATIC, MODEL, AT_BEGINNING, 1000, 0.0, None, 
 			0, 0, 0.0, 0.0, 0, None), ))
@@ -73,15 +73,14 @@ class Assembly:
 		pass
 		
 	def submitJob(self):
-		from job import *
 		jobname = 'Job-'+self.modelname
 		mdb.Job(name=jobname, model=self.modelname, description='', type=ANALYSIS, 
-        atTime=None, waitMinutes=0, waitHours=0, queue=None, memory=90, 
-        memoryUnits=PERCENTAGE, explicitPrecision=SINGLE, 
-        nodalOutputPrecision=SINGLE, echoPrint=OFF, modelPrint=OFF, 
-        contactPrint=OFF, historyPrint=OFF, userSubroutine='', scratch='', 
-        resultsFormat=ODB, parallelizationMethodExplicit=DOMAIN, numDomains=1, 
-        activateLoadBalancing=False, multiprocessingMode=DEFAULT, numCpus=1)
+			atTime=None, waitMinutes=0, waitHours=0, queue=None, memory=90, 
+			memoryUnits=PERCENTAGE, explicitPrecision=SINGLE, 
+			nodalOutputPrecision=SINGLE, echoPrint=OFF, modelPrint=OFF, 
+			contactPrint=OFF, historyPrint=OFF, userSubroutine='', scratch='', 
+			resultsFormat=ODB, parallelizationMethodExplicit=DOMAIN, numDomains=1, 
+			activateLoadBalancing=False, multiprocessingMode=DEFAULT, numCpus=1)
 		mdb.jobs[jobname].submit(consistencyChecking=OFF)
 		mdb.jobs[jobname].waitForCompletion()
 		
@@ -89,11 +88,11 @@ class Assembly:
 		self.setupShapes(shapes)
 		self.setupMaterials(materials)
 		self.addInstance(meshSize)
-		self.stepSetup(1,args)
+		self.stepSetup(steps,args)
 		self.setPositions(positions,args)
 		self.toolsRigid(args)
 		self.interactions(inits,args)
 		self.setBC(BCs = BCs,args=args)
 		self.setLoads(Loads)
-		self.submitJob()
+		# self.submitJob()
 	

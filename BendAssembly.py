@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*- 
 from Assembly import *
+from BendParts import *
 from math import *
+from step import *
+from load import *
+from step import *
+from load import *
+from material import *
+from interaction import *
+from connectorBehavior import *
+from section import *
+from assembly import *
 class BendAssembly(Assembly):
+	innerTools = []
 	def setupMaterials(self,materials):
-		from section import UNIFORM
-		from section import NO_IDEALIZATION
-		from section import SIMPSON
 		TDensity,TE,TPossion = materials['tool']
 		self.model.Material(name='Material-Tools')
 		self.model.materials['Material-Tools'].Density(table=((TDensity, ), ))
@@ -40,20 +48,18 @@ class BendAssembly(Assembly):
 				useDensity=OFF, integrationRule=SIMPSON, numIntPts=5)
 	
 	def addInstance(self,meshSizes):
-		from BendParts import Insert
-		from BendParts import Clamp
-		from BendParts import Tube
-		from BendParts import BendDie
-		from BendParts import Wiper
-		from BendParts import Press
+		#首先划分管材网格	
+		tube = Tube(self.model)
+		tube.makeIt(self.shapes,'Section-Tube',meshSizes['tube'])
+		self.parts.append(tube)
 		
 		insert = Insert(self.model)
-		RPInsert = (-self.shapes['bendR'], 0.0, (self.shapes['bendR']-self.shapes['outDiameter']/2)/2)
+		RPInsert = (0,0,self.shapes['bendR']-self.shapes['outDiameter']/2)
 		insert.makeIt(self.shapes,RPInsert,'Section-Tool',meshSizes['pressDie'])
 		self.tools.append(insert)
 		
 		clamp = Clamp(self.model)
-		RPClamp = (-self.shapes['bendR'], 0.0, (self.shapes['bendR']-self.shapes['outDiameter']/2)/2)
+		RPClamp = (0.0, 0.0, self.shapes['bendR']-self.shapes['outDiameter']/2)
 		clamp.makeIt(self.shapes,RPClamp,'Section-Tool',meshSizes['pressDie'])
 		self.tools.append(clamp)
 		
@@ -72,47 +78,50 @@ class BendAssembly(Assembly):
 		press.makeIt(self.shapes,RPPress,'Section-Tool',meshSizes['pressDie'])
 		self.tools.append(press)
 		
-		tube = Tube(self.model)
-		tube.makeIt(self.shapes,'Section-Tube',meshSizes['tube'])
-		self.parts.append(tube)
+		ball = Ball(self.model)
+		RPBall = (0.,0.,0.)
+		ball.makeIt(self.shapes,RPBall,'Section-Tool',meshSizes['pressDie'])
+		self.innerTools.append(ball)
+		
+		mandrel = Mandrel(self.model)
+		RPMandrel = (-self.shapes['bendR'], 0.0, 0.)
+		mandrel.makeIt(self.shapes,RPMandrel,'Section-Tool',meshSizes['pressDie'])
+		self.innerTools.append(mandrel)
 		
 	def setPositions(self,positions,args):
-		from assembly import CARTESIAN
 		a = self.model.rootAssembly
 		a.DatumCsysByDefault(CARTESIAN)
 		indexPositions = 0
 		for instance in self.tools:
 			p = self.model.parts[instance.partName]
 			a.Instance(name=instance.partName+'-1', part=p, dependent=ON)
-			if instance.partName=='Part-Clamp' or instance.partName=='Part-Insert' :
+			if instance.partName=='Part-Clamp' :
+				a.translate(instanceList=(instance.partName+'-1', ), vector=positions['clamp'])
+			elif instance.partName=='Part-Insert':
 				a.translate(instanceList=(instance.partName+'-1', ), vector=positions['insert'])
+			elif instance.partName=='Part-Press':
+				a.translate(instanceList=(instance.partName+'-1', ), vector=positions['press'])
 			elif instance.partName == 'Part-Wiper':
 				a.rotate(instanceList=('Part-Wiper-1', ), axisPoint=(0.0, 0.0, 0.0), 
 					axisDirection=(0.0, 1.0, 0.0), angle=positions['wiper'])
-				pass
+			
 			indexPositions += 1
-		# for instance in self.innertools:
-			# p = self.model.parts[instance.partName]
-			# a.Instance(name=instance.partName+'-1', part=p, dependent=ON)
-			# if instance.partName == 'Part-Ball':
-				# a.translate(instanceList=(instance.partName+'-1', ), vector=positions['ball'])
-			# else:
-				# a.translate(instanceList=(instance.partName+'-1', ), vector=positions['mandral'])
+		for instance in self.innerTools:
+			p = self.model.parts[instance.partName]
+			a.Instance(name=instance.partName+'-1', part=p, dependent=ON)
+			if instance.partName == 'Part-Ball':
+				a.translate(instanceList=(instance.partName+'-1', ), vector=positions['ball'])
+				#添加阵列
+			elif :
+				a.translate(instanceList=(instance.partName+'-1', ), vector=positions['mandrel'])
+
 		for instance in self.parts:
 			p = self.model.parts[instance.partName]
 			a.Instance(name=instance.partName+'-1', part=p, dependent=ON)
 			a.translate(instanceList=(instance.partName+'-1', ), vector=positions['tube'])
-		# a.LinearInstancePattern(instanceList=('Part-Ball-1', ), direction1=(0.0, 0.0, 
-			# -1.0), direction2=(0.0, 1.0, 0.0), number1=args['num'], number2=1, spacing1=args['spacing'], 
-			# spacing2=16.0)
-		# for ii in range(2,args['num']+1):
-			# self.model.rootAssembly.features.changeKey(
-				# fromName='Part-Ball-1-lin-'+str(ii)+'-1', toName='Part-Ball-'+str(ii))
 				
 	def interactions(self,inits,args):
-		from material import *
-		from interaction import *
-		from connectorBehavior import *
+		
 		a = self.model.rootAssembly
 		region1=a.instances['Part-BendDie-1'].surfaces['Surf-Outer']
 		region2=a.instances['Part-Insert-1'].surfaces['Surf-Outer']
@@ -120,11 +129,11 @@ class BendAssembly(Assembly):
 			positionToleranceMethod=COMPUTED, adjust=ON, tieRotations=ON, 
 			thickness=ON,constraintEnforcement=SURFACE_TO_SURFACE)
 
-		region1=a.instances['Part-BendDie-1'].surfaces['Surf-Outer']
-		region2=a.instances['Part-Clamp-1'].surfaces['Surf-Outer']
-		self.model.Tie(name='Tie-2', master=region1, slave=region2, 
-			positionToleranceMethod=COMPUTED, adjust=ON, tieRotations=ON, 
-			thickness=ON,constraintEnforcement=SURFACE_TO_SURFACE)
+		# region1=a.instances['Part-BendDie-1'].surfaces['Surf-Outer']
+		# region2=a.instances['Part-RecifyClamp-1'].surfaces['Surf-Outer']
+		# self.model.Tie(name='Tie-2', master=region1, slave=region2, 
+			# positionToleranceMethod=COMPUTED, adjust=ON, tieRotations=ON, 
+			# thickness=ON,constraintEnforcement=SURFACE_TO_SURFACE)
 		frictionBig = inits['0.5']
 		frictionSmall = inits['0.125']
 		self.model.ContactProperty('IntProp-BIG')
@@ -159,99 +168,62 @@ class BendAssembly(Assembly):
 					interactionProperty='IntProp-SMALL', initialClearance=OMIT, datumAxis=None, 
 					clearanceRegion=None)
 			INTINDEX = INTINDEX + 1
-		# for instance in self.innertools:
-			# region1=a.instances[instance.partName+'-1'].surfaces['Surf-Outer']
-			# region2=a.instances[self.parts[0].partName+'-1'].surfaces['Surf-Inner']
-			# self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
-				# createStepName='Initial', master = region1, slave = region2, 
-				# mechanicalConstraint=PENALTY, sliding=FINITE, 
-					# interactionProperty='IntProp-SMALL', initialClearance=OMIT, datumAxis=None, 
-					# clearanceRegion=None)
-			# INTINDEX = INTINDEX + 1
 		
-		# self.model.ConnectorSection(name='ConnSect-1', translationalType=LINK)
-		# a = self.model.rootAssembly
-		# r11 = a.instances['Part-Mandral-1'].referencePoints
-		# r12 = a.instances['Part-Ball-1'].referencePoints
-		# wire = a.WirePolyLine(points=((r11[3], r12[5]), ), mergeType=IMPRINT, 
-			# meshable=False)
-		# a.features.changeKey(fromName=wire.name, 
-			# toName='Wire-1')
-		# e1 = a.edges
-		# edges1 = e1.getSequenceFromMask(mask=('[#1 ]', ), )
-		# a.Set(edges=edges1, name='Wire-1-Set-1')
-		# region = a.sets['Wire-1-Set-1']
-		# csa = a.SectionAssignment(sectionName='ConnSect-1', region=region)
-		# region1=a.instances['Part-Mandral-1'].surfaces['Surf-Outer']
-		# region2=a.instances['Part-Ball-1'].surfaces['Surf-Outer']
-		# self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
-			# createStepName='Initial', master = region1, slave = region2, 
-			# mechanicalConstraint=PENALTY, sliding=FINITE, 
-			# interactionProperty='IntProp-SMALL', initialClearance=OMIT, datumAxis=None, 
-			# clearanceRegion=None)
-		# INTINDEX = INTINDEX + 1
-		# for ii in range(2,args['num']+1):
-			# r11 = a.instances['Part-Ball-'+str(ii-1)].referencePoints
-			# r12 = a.instances['Part-Ball-'+str(ii)].referencePoints
-			# wire = a.WirePolyLine(points=((r11[5],r12[5]),),mergeType=IMPRINT,
-				# meshable=False)
-			# a.features.changeKey(fromName=wire.name,toName='Wire-'+str(ii))
-			# e1 = a.edges
-			# edges1=e1.getSequenceFromMask(mask=('[#1]',),)
-			# a.Set(edges=edges1,name='Wire-'+str(ii)+'-Set-1')
-			# region=a.sets['Wire-'+str(ii)+'-Set-1']
-			# csa=a.SectionAssignment(sectionName='ConnSect-1',region=region)
-			# region1=a.instances['Part-Ball-'+str(ii-1)].surfaces['Surf-Outer']
-			# region2=a.instances['Part-Ball-'+str(ii)].surfaces['Surf-Outer']
-			# region3=a.instances['Part-Tube-1'].surfaces['Surf-Inner']
-			# self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
-				# createStepName='Initial', master = region1, slave = region2, 
-				# mechanicalConstraint=PENALTY, sliding=FINITE, 
-				# interactionProperty='IntProp-SMALL', initialClearance=OMIT, datumAxis=None, 
-				# clearanceRegion=None)
-			# INTINDEX = INTINDEX + 1
-			# self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
-				# createStepName='Initial', master = region2, slave = region3, 
-				# mechanicalConstraint=PENALTY, sliding=FINITE, 
-				# interactionProperty='IntProp-SMALL', initialClearance=OMIT, datumAxis=None, 
-				# clearanceRegion=None)
-			# INTINDEX = INTINDEX + 1
 	def setBC(self,BCs,args):
-		from step import *
-		from load import *
+		
 		angle = BCs['angle']
+		close = BCs['close']
 		assist = args['assist'] * (self.shapes['bendR']+self.shapes['outDiameter']/2)*angle
 		self.model.TabularAmplitude(name='Amp-1', timeSpan=STEP, 
 			smooth=0.05, data=((0.0, 0.0), (0.1, 0.05),(0.7,0.6),(.8,.9), (0.9,.95), (1.0, 
 			1.0)))
+		self.model.TabularAmplitude(name='Amp-3', timeSpan=STEP, smooth=0.1, 
+			data=((0.0, 0.0), (0.01, 0.05),(0.07,0.6),(.08,.9), (0.09,.95), (.1, \
+			1.0)))
 		a = self.model.rootAssembly
 		region = a.instances['Part-BendDie-1'].sets['Set-RP']
 		self.model.DisplacementBC(name='BC-Bend', createStepName='Step-1', 
-			region=region, u1=0.0, u2=0.0, u3=0.0, ur1=0.0, ur2=-angle, ur3=0.0, 
+			region=region, u1=0.0, u2=0.0, u3=0.0, ur1=0.0, ur2=0.0, ur3=0.0, 
 			amplitude='Amp-1', fixed=OFF, distributionType=UNIFORM, fieldName='', 
 			localCsys=None)
+		self.model.boundaryConditions['BC-Bend'].setValuesInStep(
+			stepName='Step-2', ur2=-angle)
 		region = a.instances['Part-Press-1'].sets['Set-RP']
 		self.model.DisplacementBC(name='BC-Press', createStepName='Step-1', 
-			region=region, u1=UNSET, u2=0.0, u3=-assist, ur1=0.0, ur2=0.0, ur3=0.0, 
-			amplitude='Amp-1', fixed=OFF, distributionType=UNIFORM, fieldName='', 
+			region=region, u1=close, u2=0.0, u3=0.0, ur1=0.0, ur2=0.0, ur3=0.0, 
+			amplitude='Amp-3', fixed=OFF, distributionType=UNIFORM, fieldName='', 
 			localCsys=None)
+		self.model.boundaryConditions['BC-Press'].setValuesInStep(
+			stepName='Step-2',amplitude='Amp-1',u1=0.0, u3=-assist)
+		region = a.instances['Part-Clamp-1'].sets['Set-RP']
+		self.model.DisplacementBC(name='BC-Clamp', createStepName='Step-1', 
+			region=region, u1=close, u2=0.0, u3=0.0, ur1=0.0, ur2=0.0, ur3=0.0, 
+			amplitude='Amp-3', fixed=OFF, distributionType=UNIFORM, fieldName='', 
+			localCsys=None)
+		self.model.boundaryConditions['BC-Clamp'].setValuesInStep(
+			stepName='Step-2',amplitude='Amp-1',u1=0.0, ur2=-angle)
 		region = a.instances['Part-Wiper-1'].sets['Set-RP']
 		self.model.DisplacementBC(name='BC-Wiper', createStepName='Step-1', 
 			region=region, u1=0.0, u2=0.0, u3=0.0, ur1=0.0, ur2=0.0, ur3=0.0, 
 			amplitude=UNSET, fixed=OFF, distributionType=UNIFORM, fieldName='', 
 			localCsys=None)
 	def setLoads(self,loads):
-		from step import *
-		from load import *
 		self.model.TabularAmplitude(name='Amp-2', timeSpan=STEP, smooth=0.1, 
 			data=((0.0, 0.0), (0.05, 0.3), (0.1, 1.0), (1.0, 1.0)))
 		a = self.model.rootAssembly
 		region = a.instances['Part-Press-1'].sets['Set-RP']
-		self.model.ConcentratedForce(name='Load-1', createStepName='Step-1', 
+		self.model.ConcentratedForce(name='Load-1', createStepName='Step-2', 
 			region=region, cf1=loads['Press'], amplitude='Amp-2', 
 			distributionType=UNIFORM, field='', localCsys=None)
 		
-
-
-	
+	def stepSetup(self, steps,args):
+		self.model.ExplicitDynamicsStep(name='Step-1', previous='Initial', 
+			timePeriod=0.1,\
+			massScaling=((SEMI_AUTOMATIC, MODEL, AT_BEGINNING, 1000, 0.0, None, 
+			0, 0, 0.0, 0.0, 0, None), ))
+		self.model.fieldOutputRequests['F-Output-1'].setValues(variables=(
+			'S', 'SVAVG', 'PE', 'PEVAVG', 'PEEQ', 'PEEQVAVG', 'LE', 'U', 'V', 'A', 
+			'RF', 'CSTRESS', 'EVF', 'STH', 'COORD'))
+		for ii in range(2,steps+1):
+			self.model.ExplicitDynamicsStep(name='Step-'+str(ii), previous='Step-'+str(ii-1))
 

@@ -1,24 +1,33 @@
 # -*- coding: utf-8 -*- 
 from PostProcess import *
+from part import *
+from odbAccess import *
+from abaqus import *
+from abaqusConstants import *
 class TBPost(PostProcess):
-	def _init_(self):
-		PostProcess._init_(self)
-		self.wrArea ={}
+	def __init__(self,modelname):
+		self.part = None
+		self.modelname = modelname
+		self.odb=openOdb(path='Job-'+modelname+'.odb')
+		self.step=self.odb.steps.values()[-1]
+		self.frame=self.step.frames[-1] 
 		self.elements ={}
+		self.endSection={}
+		self.headSection={}
 	def output(self,args):
-		zBound = (0,100)
-		bendR = args['bendR']
-		outDiameter = args['outDiameter']
-		xBound = [-bendR+outDiameter/2-20,-bendR+outDiameter/2+20]
-		for node in self.part.nodes:
-			if zBound[0]<node.coordinates[2]<zBound[1] \
-				and xBound[0]<node.coordinates[0]<xBound[1]\
-				and -1.7<node.coordinates[1]<1.7:
-				self.wrArea[node.label]=[node.coordinates[0],node.coordinates[1],node.coordinates[2]]
-		print self.wrArea
-shapes={'bendR':220,'outDiameter':40}			
-tb = TBPost()
-tb._init_()
-tb.setOdb('Job-1')
-tb.setPart('PART-TUBE-1')
-tb.output(shapes)		
+		coords=self.frame.fieldOutputs['COORD']
+		ends=self.part.nodeSets['SET-END']
+		heads=self.part.nodeSets['SET-HEAD']
+		end=coords.getSubset(region=ends)
+		head=coords.getSubset(region=heads)
+		for v in end.values:
+			self.endSection[v.nodeLabel]=[v.data[0],v.data[1],v.data[2]]
+		for v in head.values:
+			self.headSection[v.nodeLabel]=[v.data[0],v.data[1],v.data[2]]
+		
+		return self.endSection,self.headSection
+# shapes={'bendR':220,'outDiameter':40}		
+# BC = {'angle':0.5}	
+# tb = TBPost('Model-40-1')
+# tb.setPart('PART-TUBE-1')
+# tb.output(BC)		

@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*- 
+from odbAccess import *
+from abaqus import *
+from abaqusConstants import *
 _metaclass_ = type
 class PostProcess:
-	def _init_(self):
-		self.odb=None
+	def __init__(self,modelname):
 		self.part = None
-	def setOdb(self,jobname):
-		from odbAccess import *
-		self.odb=openOdb(path=jobname+'.odb')
+		self.modelname = modelname
+		self.odb=openOdb(path='Job-'+modelname+'.odb')
+		self.step=self.odb.steps.values[-1]
+		self.frame=self.step.frame[-1] 
 	def setPart(self,partname):
-		from abaqus import *
-		from abaqusConstants import *
 		self.part=self.odb.rootAssembly.instances[partname]
-		
 	def output(self,args):
-		from abaqus import *
-		from abaqusConstants import *
 		pass
-	
+	def close(self):
+		self.odb.close()
+		del self.odb
 	
 		
 		

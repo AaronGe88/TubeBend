@@ -73,7 +73,9 @@ class Part:
 		p = self.model.parts[self.partName]
 		p.seedPart(size=size, deviationFactor=0.1, minSizeFactor=0.1)
 		p.generateMesh()
-	
+		
+			
+		
 	def makeIt(self,shape,sectName,meshSize):
 		self.setShape(shape)
 		self.geometry()
