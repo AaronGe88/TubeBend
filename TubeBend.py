@@ -802,6 +802,11 @@ class BendAssembly(Assembly):
 			region=region, u1=0.0, u2=0.0, u3=0.0, ur1=0.0, ur2=0.0, ur3=0.0, 
 			amplitude=UNSET, fixed=OFF, distributionType=UNIFORM, fieldName='', 
 			localCsys=None)
+		region = a.instances['Part-Mandrel-1'].sets['Set-RP']
+		self.model.DisplacementBC(name='BC-Mandral', 
+			createStepName='Step-1', region=region, u1=0.0, u2=0.0, u3=0.0, 
+			ur1=0.0, ur2=0.0, ur3=0.0, amplitude=UNSET, fixed=OFF, 
+			distributionType=UNIFORM, fieldName='', localCsys=None)
 	def setLoads(self,loads):
 		self.model.TabularAmplitude(name='Amp-2', timeSpan=STEP, smooth=0.1, 
 			data=((0.0, 0.0), (0.05, 0.3), (0.1, 1.0), (1.0, 1.0)))
