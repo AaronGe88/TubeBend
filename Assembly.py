@@ -58,7 +58,7 @@ class Assembly:
 	def stepSetup(self, steps,args):
 		
 		self.model.ExplicitDynamicsStep(name='Step-1', previous='Initial', 
-			massScaling=((SEMI_AUTOMATIC, MODEL, AT_BEGINNING, 1000, 0.0, None, 
+			massScaling=((SEMI_AUTOMATIC, regionDef0, AT_BEGINNING, 5.0, 0.0, None, 
 			0, 0, 0.0, 0.0, 0, None), ))
 		self.model.fieldOutputRequests['F-Output-1'].setValues(variables=(
 			'S', 'SVAVG', 'PE', 'PEVAVG', 'PEEQ', 'PEEQVAVG', 'LE', 'U', 'V', 'A', 
@@ -88,11 +88,10 @@ class Assembly:
 		self.setupShapes(shapes)
 		self.setupMaterials(materials)
 		self.addInstance(meshSize)
-		self.stepSetup(steps,args)
 		self.setPositions(positions,args)
+		self.stepSetup(steps,args)
 		self.toolsRigid(args)
 		self.interactions(inits,args)
 		self.setBC(BCs = BCs,args=args)
 		self.setLoads(Loads)
-		# self.submitJob()
-	
+		#self.submitJob()
