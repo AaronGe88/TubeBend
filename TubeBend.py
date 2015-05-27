@@ -381,8 +381,6 @@ class Ball(Tool):
 		del self.model.sketches['__profile__']
 		c1 = p.cells
 		p.RemoveCells(cellList = c1[0:1])
-		f = p.faces
-		p.RemoveFaces(faceList = f[0:2], deleteCells=False)
 		
 	def outerSurface(self):
 		p = self.model.parts[self.partName]
@@ -395,7 +393,7 @@ class Ball(Tool):
 		p = self.model.parts[self.partName]
 		p.ReferencePoint(point=self.RP)
 		r = p.referencePoints
-		refPoints=(r[6], )
+		refPoints=(r[5], )
 		p.Set(referencePoints=refPoints, name='Set-RP')
 	def setMaterial(self,sectName):
 		p = self.model.parts[self.partName]
@@ -409,6 +407,9 @@ class Ball(Tool):
 	
 	def mesh(self,size):
 		p = self.model.parts[self.partName]
+		f = p.faces
+		pickedRegions = f.getSequenceFromMask(mask=('[#7 ]', ), )
+		p.setMeshControls(regions=pickedRegions, elemShape=QUAD)
 		p.seedPart(size=size, deviationFactor=0.1, minSizeFactor=0.1)
 		p.generateMesh()
 		
@@ -723,12 +724,40 @@ class BendAssembly(Assembly):
 				clearanceRegion=None)
 			INTINDEX = INTINDEX + 1
 			
+		region1=a.instances['Part-Mandrel-1'].surfaces['Surf-Outer']
+		region2=a.instances['Part-Ball-1'].surfaces['Surf-Outer']
+		self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
+			createStepName='Step-1', master = region1, slave = region2, 
+			mechanicalConstraint=PENALTY, sliding=FINITE, 
+			interactionProperty='IntProp-Part-Ball', initialClearance=OMIT, datumAxis=None, 
+			clearanceRegion=None)
+		INTINDEX = INTINDEX + 1
+		
+		region1=a.instances['Part-Ball-1'].surfaces['Surf-Outer']
+		region2=a.instances['Part-Ball-1-lin-1-2'].surfaces['Surf-Outer']
+		self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
+			createStepName='Step-1', master = region1, slave = region2, 
+			mechanicalConstraint=PENALTY, sliding=FINITE, 
+			interactionProperty='IntProp-Part-Ball', initialClearance=OMIT, datumAxis=None, 
+			clearanceRegion=None)
+		INTINDEX = INTINDEX + 1
+		
+		for ii in range(2,args['ballNum']):
+			region1=a.instances['Part-Ball-1-lin-1-'+str(ii)].surfaces['Surf-Outer']
+			region2=a.instances['Part-Ball-1-lin-1-'+str(ii+1)].surfaces['Surf-Outer']
+			self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
+				createStepName='Step-1', master = region1, slave = region2, 
+				mechanicalConstraint=PENALTY, sliding=FINITE, 
+				interactionProperty='IntProp-Part-Ball', initialClearance=OMIT, datumAxis=None, 
+				clearanceRegion=None)
+			INTINDEX = INTINDEX + 1
+			
 		self.model.ConnectorSection(name='ConnSect-1', 
 			translationalType=LINK)
 		a = self.model.rootAssembly
 		r1 = a.instances['Part-Mandrel-1'].referencePoints
 		r2 = a.instances['Part-Ball-1'].referencePoints
-		wire = a.WirePolyLine(points=((r1[2], r2[6]), ), mergeType=IMPRINT, 
+		wire = a.WirePolyLine(points=((r1[2], r2[5]), ), mergeType=IMPRINT, 
 			meshable=False)
 		oldName = wire.name
 		a.features.changeKey(fromName=oldName, toName='Wire-1')
@@ -739,7 +768,7 @@ class BendAssembly(Assembly):
 		csa = a.SectionAssignment(sectionName='ConnSect-1', region=region)
 		r11 = a.instances['Part-Ball-1'].referencePoints
 		r12 = a.instances['Part-Ball-1-lin-1-2'].referencePoints
-		wire = a.WirePolyLine(points=((r11[6], r12[6]), ), mergeType=IMPRINT, 
+		wire = a.WirePolyLine(points=((r11[5], r12[5]), ), mergeType=IMPRINT, 
 			meshable=False)
 		oldName = wire.name
 		mdb.models['Model-65-1'].rootAssembly.features.changeKey(fromName=oldName, 
@@ -752,7 +781,7 @@ class BendAssembly(Assembly):
 		for ii in range(2,args['ballNum']):
 			r1 = a.instances['Part-Ball-1-lin-1-'+str(ii)].referencePoints
 			r2 = a.instances['Part-Ball-1-lin-1-'+str(ii+1)].referencePoints
-			wire = a.WirePolyLine(points=((r1[6], r2[6]), ), mergeType=IMPRINT, 
+			wire = a.WirePolyLine(points=((r1[5], r2[5]), ), mergeType=IMPRINT, 
 				meshable=False)
 			oldName = wire.name
 			a.features.changeKey(fromName=oldName, 
@@ -770,10 +799,10 @@ class BendAssembly(Assembly):
 		close = BCs['close']
 		assist = args['assist'] * (self.shapes['bendR']+self.shapes['outDiameter']/2)*angle
 		self.model.TabularAmplitude(name='Amp-1', timeSpan=STEP, 
-			smooth=0.05, data=((0.0, 0.0), (0.1, 0.05),(0.7,0.6),(.8,.9), (0.9,.95), (1.0, 
+		 data=((0.0, 0.0), (0.05, 0.05),(0.35,0.6),(.4,.9), (0.45,.95), (.5, 
 			1.0)))
-		self.model.TabularAmplitude(name='Amp-3', timeSpan=STEP, smooth=0.1, 
-			data=((0.0, 0.0), (0.01, 0.05),(0.07,0.6),(.08,.9), (0.09,.95), (.1, \
+		self.model.TabularAmplitude(name='Amp-3', timeSpan=STEP,  
+			data=((0.0, 0.0), (0.005, 0.05),(0.035,0.6),(.04,.9), (0.045,1.), (.05, \
 			1.0)))
 		a = self.model.rootAssembly
 		region = a.instances['Part-BendDie-1'].sets['Set-RP']
@@ -808,8 +837,8 @@ class BendAssembly(Assembly):
 			ur1=0.0, ur2=0.0, ur3=0.0, amplitude=UNSET, fixed=OFF, 
 			distributionType=UNIFORM, fieldName='', localCsys=None)
 	def setLoads(self,loads):
-		self.model.TabularAmplitude(name='Amp-2', timeSpan=STEP, smooth=0.1, 
-			data=((0.0, 0.0), (0.05, 0.3), (0.1, 1.0), (1.0, 1.0)))
+		self.model.TabularAmplitude(name='Amp-2', timeSpan=STEP,
+			data=((0.0, 0.0), (0.025, 0.3), (0.05, 1.0), (.5, 1.0)))
 		a = self.model.rootAssembly
 		region = a.instances['Part-Press-1'].sets['Set-RP']
 		self.model.ConcentratedForce(name='Load-1', createStepName='Step-2', 
@@ -817,15 +846,17 @@ class BendAssembly(Assembly):
 			distributionType=UNIFORM, field='', localCsys=None)
 		
 	def stepSetup(self, steps,args):
+		regionDef0=self.model.rootAssembly.allInstances[self.parts[0].partName+'-1'].sets['Set-Body']
 		self.model.ExplicitDynamicsStep(name='Step-1', previous='Initial', 
-			timePeriod=0.1,\
-			massScaling=((SEMI_AUTOMATIC, MODEL, AT_BEGINNING, 1000, 0.0, None, 
+			timePeriod=0.05,\
+			massScaling=((SEMI_AUTOMATIC, regionDef0, AT_BEGINNING, 5.0, 0.0, None, \
 			0, 0, 0.0, 0.0, 0, None), ))
 		self.model.fieldOutputRequests['F-Output-1'].setValues(variables=(
 			'S', 'SVAVG', 'PE', 'PEVAVG', 'PEEQ', 'PEEQVAVG', 'LE', 'U', 'V', 'A', 
 			'RF', 'CSTRESS', 'EVF', 'STH', 'COORD'))
 		for ii in range(2,steps+1):
-			self.model.ExplicitDynamicsStep(name='Step-'+str(ii), previous='Step-'+str(ii-1))
+			self.model.ExplicitDynamicsStep(name='Step-'+str(ii), previous='Step-'+str(ii-1)\
+				,timePeriod=.5)
 
 from FEA import * 
 from TubeSP import TubeSP
@@ -866,11 +897,11 @@ for jj in range(65,67,2):
 		modelname='Model-'+str(jj)+'-'+str(ii)
 		t = TBFEA(modelname)
 		inits={'0.5':.5,'0.125':.125}
-		arg={'assist':1.0,'mandralOut':3.,'ball2ball':10.,'ballNum':3}
+		arg={'assist':1.0,'mandralOut':3.,'ball2ball':5.,'ballNum':3}
 		Load={'Press':30000}
 		out = float(jj)
 		shapes = {'bendR':200.0,'outDiameter':out,'thick':3.5,'toolGap':0.1,'ballGap':1.0,'ballThick':20.}
-		BCs={'angle':ii * 15.0/180.0*pi,'close':shapes['outDiameter']/2}
+		BCs={'angle':6.* 15.0/180.0*pi,'close':shapes['outDiameter']/2}
 		
 		positions = {'clamp':(-BCs['close'],0,-shapes['bendR']+shapes['outDiameter']/2),'insert':(.0,0.,-shapes['bendR']+shapes['outDiameter']/2),\
 			'press':(-BCs['close'],0.,0.),\
