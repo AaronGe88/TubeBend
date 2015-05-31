@@ -94,4 +94,4 @@ class Assembly:
 		self.interactions(inits,args)
 		self.setBC(BCs = BCs,args=args)
 		self.setLoads(Loads)
-		#self.submitJob()
+		self.submitJob()

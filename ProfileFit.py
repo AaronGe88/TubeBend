@@ -58,8 +58,11 @@ def solveArray(modelname,args):
 	print angle / math.pi * 180
 	return angle / math.pi * 180
 
-	
-		
+def getThickandWrinkle(modelname,args):
+	tbPost=TBPost(modelname)
+	tbPost.setPart('PART-TUBE-1')
+	endCoords,headCoords,thMin,wrinkle=tbPost.output(args)
+	return 	thMin,wrinkle
 
 # modelname= 'Model-40-1-SP'
 # args={'modelname':modelname,'angle':1.0,}

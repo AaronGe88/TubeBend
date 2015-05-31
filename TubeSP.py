@@ -2,16 +2,24 @@ from Springback import *
 class TubeSP(Springback):
 	def setModel(self):
 		a = self.model.rootAssembly
-		a.deleteFeatures(('Part-Insert-1', 'Part-RecifyClamp-1', 'Part-BendDie-1', 
-			'Part-Wiper-1', 'Part-RecifyPress-1', ))
-		self.model.interactions.delete(('Int-0', 'Int-1', 'Int-2', 
-			'Int-3', 'Int-4', ))
-		self.model.constraints.delete(('RIGID-Part-BendDie', 
-			'RIGID-Part-RecifyClamp', 'RIGID-Part-Insert', 'RIGID-Part-RecifyPress', 
-			'RIGID-Part-Wiper', 'Tie-1', ))
-		del self.model.loads['Load-1']
-		self.model.boundaryConditions.delete(('BC-Bend', 'BC-Press', 
-			'BC-Wiper','BC-Clamp' ))
+		features = a.features.keys()
+		for ii in features:
+			if ii != 'Part-Tube-1':
+				a.deleteFeatures((ii,))
+		inter = self.model.interactions.keys()
+		self.model.interactions.delete(inter)
+		cons = self.model.constraints.keys()
+		self.model.constraints.delete(cons)
+		
+		loads = self.model.loads.keys()
+		for ii in loads:
+			del self.model.loads[ii]
+		bound = self.model.boundaryConditions.keys()
+		self.model.boundaryConditions.delete(bound)
+		
+		sects = len(a.sectionAssignments)
+		for ii in range(sects):
+			del a.sectionAssignments[sects-1-ii]
 	def stepSetup(self):
 		del self.model.steps['Step-2']
 		self.model.StaticStep(name='Step-1', previous='Initial', 
