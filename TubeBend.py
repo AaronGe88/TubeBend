@@ -26,7 +26,7 @@ class Insert(Tool):
 	def __init__(self,model):
 		Tool.__init__(self,model)
 		self.partName = 'Part-Insert'
-		self.friction = .5
+		self.friction = .3
 	
 	def geometry(self):
 		bendR = self.shape['bendR']
@@ -52,7 +52,7 @@ class Clamp(Tool):
 	def __init__(self,model):
 		Tool.__init__(self,model)
 		self.partName = 'Part-Clamp'
-		self.friction = .5
+		self.friction = .7
 	def geometry(self):
 
 		bendR = self.shape['bendR']
@@ -83,7 +83,7 @@ class BendDie(Tool):
 	def __init__(self,model):
 		Tool.__init__(self,model)
 		self.partName = 'Part-BendDie'
-		self.friction = .125
+		self.friction = .3
 	def geometry(self):
 		bendR = self.shape['bendR']
 		outDiameter = self.shape['outDiameter']
@@ -111,7 +111,7 @@ class Wiper(Tool):
 	def __init__(self,model):
 		Tool.__init__(self,model)
 		self.partName = 'Part-Wiper'
-		self.friction = .5
+		self.friction = .05
 	
 	def geometry(self):
 		
@@ -138,7 +138,7 @@ class Press(Tool):
 	def __init__(self,model):
 		Tool.__init__(self,model)
 		self.partName = 'Part-Press'
-		self.friction = .5
+		self.friction = .3
 	def geometry(self):
 		bendR = self.shape['bendR']
 		outDiameter = self.shape['outDiameter']
@@ -164,172 +164,9 @@ class Press(Tool):
 		refPoints=(r[2], )
 		p.Set(referencePoints=refPoints, name='Set-RP')
 		
-class RecifyClamp(Tool):
-	def __init__(self,model):
-		Tool.__init__(self,model)
-		self.partName = 'Part-RecifyClamp'
-		self.friction = .5
-		self.r2=0.
-		self.r3=0.
-		self.h=0.
-	def geometry(self):
-		bendR = self.shape['bendR']
-		outDiameter = self.shape['outDiameter']
-		toolGap=self.shape['toolGap']
-		if bendR / outDiameter > 1.5 and bendR / outDiameter <= 2:
-			self.r2=0.95*outDiameter
-			self.r3=0.37*outDiameter
-			self.h=0.56*outDiameter
-		elif bendR /outDiameter > 2 and bendR / outDiameter <= 3.5:
-			self.r2=outDiameter
-			self.r3=0.4*outDiameter
-			self.h=0.545*outDiameter
-		elif bendR / outDiameter > 3.5:
-			self.r2=outDiameter
-			self.r3=0.5*outDiameter
-			self.h=0.5*outDiameter
-		s1 = self.model.ConstrainedSketch(name='__profile__', 
-			sheetSize=200.0)
-		g, v, d, c = s1.geometry, s1.vertices, s1.dimensions, s1.constraints
-		s1.setPrimaryObject(option=STANDALONE)
-		s1.CircleByCenterPerimeter(center=(-bendR, 0.0), point1=(-bendR, outDiameter/2+toolGap))
-		s1.FixedConstraint(entity=g[2])
-		s1.ArcByCenterEnds(center=(-bendR-self.h+self.r3, 0.0), point1=(-bendR-self.h, 0.0),\
-			point2=(-bendR-self.h+self.r3, self.r3), direction=CLOCKWISE)
-		s1.FixedConstraint(entity=g[3])
-		s1.ArcByCenterEnds(center=(-bendR+outDiameter/5, -outDiameter/1.7), \
-			point1=(-bendR-outDiameter/2+5, outDiameter/2-5),\
-			point2=(-bendR+outDiameter/4, outDiameter/1.7), direction=CLOCKWISE)
-		s1.TangentConstraint(entity1=g[3], entity2=g[4])
-		s1.TangentConstraint(entity1=g[2], entity2=g[4])
-		s1.trimExtendCurve(curve1=g[4], point1=(-bendR-outDiameter/6, outDiameter/2), 
-			curve2=g[3], point2=(-bendR-self.h+5, outDiameter/3))
-		s1.trimExtendCurve(curve1=g[3], point1=(-bendR-self.h+2, outDiameter/5), 
-			curve2=g[5], point2=(-bendR-outDiameter/5, outDiameter/2+2))
-		s1.Line(point1=(-bendR-self.h, 0.0), point2=(-bendR, 0.0))
-		s1.HorizontalConstraint(entity=g[7], addUndoState=False)
-		s1.Line(point1=(-bendR, 0.0), point2=(-bendR, outDiameter/2+5))
-		s1.VerticalConstraint(entity=g[8], addUndoState=False)
-		
-		s1.autoTrimCurve(curve1=g[2], point1=(-bendR-self.h+3, outDiameter/5))
-		s1.autoTrimCurve(curve1=g[10], point1=(-bendR, -outDiameter))
-		s1.autoTrimCurve(curve1=g[5], point1=(-bendR+outDiameter/6, outDiameter/1.5))
-		s1.autoTrimCurve(curve1=g[11], point1=(-bendR-outDiameter/6, outDiameter/2))
-	
-		s1.setAsConstruction(objectList=(g[7], g[8]))
-		s1.copyMirror(mirrorLine=g[7], objectList=(g[6], g[12], g[9]))
-		p = self.model.Part(name=self.partName, dimensionality=THREE_D, 
-			type=DEFORMABLE_BODY)
-		p = self.model.parts[self.partName]
-		p.BaseShellExtrude(sketch=s1, depth=bendR-outDiameter/2)
-		s1.unsetPrimaryObject() 
-		p = self.model.parts[self.partName]
-		del self.model.sketches['__profile__']
-		
-	def outerSurface(self):
-		p = self.model.parts[self.partName]
-		s = p.faces
-		side2Faces = s.getSequenceFromMask(mask=('[#1f ]', ), )
-		p.Surface(side2Faces=side2Faces, name='Surf-Outer')
-	def setRP(self,RP):
-		self.RP = RP
-		p = self.model.parts[self.partName]
-		p.ReferencePoint(point=self.RP)
-		r = p.referencePoints
-		refPoints=(r[2], )
-		p.Set(referencePoints=refPoints, name='Set-RP')
-	def setMaterial(self,sectName):
-		p = self.model.parts[self.partName]
-		f = p.faces
-		faces = f.getSequenceFromMask(mask=('[#ff ]', ), )
-		p.Set(faces=faces, name='Set-Body')
-		region = p.sets['Set-Body']
-		p.SectionAssignment(region=region, sectionName=sectName, offset=0.0, 
-			offsetType=BOTTOM_SURFACE, offsetField='', 
-			thicknessAssignment=FROM_SECTION)
 
-class RecifyPress(Tool):
-	def __init__(self,model):
-		Tool.__init__(self,model)
-		self.partName = 'Part-RecifyPress'
-		self.friction = .5
-		self.r2=0.
-		self.r3=0.
-		self.h=0.
-	def geometry(self):
-		bendR = self.shape['bendR']
-		outDiameter = self.shape['outDiameter']
-		toolGap=self.shape['toolGap']
-		if bendR / outDiameter > 1.5 and bendR / outDiameter <= 2:
-			self.r2=0.95*outDiameter
-			self.r3=0.37*outDiameter
-			self.h=0.56*outDiameter
-		elif bendR /outDiameter > 2 and bendR / outDiameter <= 3.5:
-			self.r2=outDiameter
-			self.r3=0.4*outDiameter
-			self.h=0.545*outDiameter
-		elif bendR / outDiameter > 3.5:
-			self.r2=outDiameter
-			self.r3=0.5*outDiameter
-			self.h=0.5*outDiameter
-		s1 = self.model.ConstrainedSketch(name='__profile__', 
-			sheetSize=200.0)
-		g, v, d, c = s1.geometry, s1.vertices, s1.dimensions, s1.constraints
-		s1.setPrimaryObject(option=STANDALONE)
-		s1.CircleByCenterPerimeter(center=(-bendR, 0.0), point1=(-bendR, outDiameter/2+toolGap))
-		s1.FixedConstraint(entity=g[2])
-		s1.ArcByCenterEnds(center=(-bendR-self.h+self.r3, 0.0), point1=(-bendR-self.h, 0.0),\
-			point2=(-bendR-self.h+self.r3, self.r3), direction=CLOCKWISE)
-		s1.FixedConstraint(entity=g[3])
-		s1.ArcByCenterEnds(center=(-bendR+outDiameter/5, -outDiameter/1.7), \
-			point1=(-bendR-outDiameter/2+5, outDiameter/2-5),\
-			point2=(-bendR+outDiameter/4, outDiameter/1.7), direction=CLOCKWISE)
-		s1.TangentConstraint(entity1=g[3], entity2=g[4])
-		s1.TangentConstraint(entity1=g[2], entity2=g[4])
-		s1.trimExtendCurve(curve1=g[4], point1=(-bendR-outDiameter/6, outDiameter/2), 
-			curve2=g[3], point2=(-bendR-self.h+5, outDiameter/3))
-		s1.trimExtendCurve(curve1=g[3], point1=(-bendR-self.h+2, outDiameter/5), 
-			curve2=g[5], point2=(-bendR-outDiameter/5, outDiameter/2+2))
-		s1.Line(point1=(-bendR-self.h, 0.0), point2=(-bendR, 0.0))
-		s1.HorizontalConstraint(entity=g[7], addUndoState=False)
-		s1.Line(point1=(-bendR, 0.0), point2=(-bendR, outDiameter/2+5))
-		s1.VerticalConstraint(entity=g[8], addUndoState=False)
-		
-		s1.autoTrimCurve(curve1=g[2], point1=(-bendR-self.h+3, outDiameter/5))
-		s1.autoTrimCurve(curve1=g[10], point1=(-bendR, -outDiameter))
-		s1.autoTrimCurve(curve1=g[5], point1=(-bendR+outDiameter/6, outDiameter/1.5))
-		s1.autoTrimCurve(curve1=g[11], point1=(-bendR-outDiameter/6, outDiameter/2))
-	
-		s1.setAsConstruction(objectList=(g[7], g[8]))
-		s1.copyMirror(mirrorLine=g[7], objectList=(g[6], g[12], g[9]))
-		p = self.model.Part(name=self.partName, dimensionality=THREE_D, 
-			type=DEFORMABLE_BODY)
-		p = self.model.parts[self.partName]
-		p.BaseShellExtrude(sketch=s1, depth=15 * outDiameter,)
-		s1.unsetPrimaryObject()
-		p = self.model.parts[self.partName]
-		del self.model.sketches['__profile__']
-	def outerSurface(self):
-		p = self.model.parts[self.partName]
-		s = p.faces
-		side2Faces = s.getSequenceFromMask(mask=('[#1f ]', ), )
-		p.Surface(side2Faces=side2Faces, name='Surf-Outer')
-	def setRP(self,RP):
-		self.RP = RP
-		p = self.model.parts[self.partName]
-		p.ReferencePoint(point=self.RP)
-		r = p.referencePoints
-		refPoints=(r[2], )
-		p.Set(referencePoints=refPoints, name='Set-RP')
-	def setMaterial(self,sectName):
-		p = self.model.parts[self.partName]
-		f = p.faces
-		faces = f.getSequenceFromMask(mask=('[#ff ]', ), )
-		p.Set(faces=faces, name='Set-Body')
-		region = p.sets['Set-Body']
-		p.SectionAssignment(region=region, sectionName=sectName, offset=0.0, 
-			offsetType=BOTTOM_SURFACE, offsetField='', 
-			thicknessAssignment=FROM_SECTION)
+
+
 			
 class Ball(Tool):
 	def __init__(self,model):
@@ -506,15 +343,7 @@ class Tube(Part):
 		p.Set(nodes=heads, name='Set-Head')
 		p.Set(nodes=ends,name='Set-End')
 		
-# Mdb()
-# modelname = 'Model-1'
-# model = mdb.models[modelname]
-# shapes = {'bendR':200,'outDiameter':65,'toolGap':.1,'ballGap':1.0,'ballThick':20.,'thick':3.5}
-# insert = Mandrel(model)
-# insert.setShape(shapes)
-# insert.geometry()
-# insert.setRP((-shapes['bendR'],0.,0.))
-# insert.outerSurface()
+
 from Assembly import *
 class BendAssembly(Assembly):
 	def setupMaterials(self,materials):
@@ -640,21 +469,7 @@ class BendAssembly(Assembly):
 			region1 = a.instances['Part-Ball-1-lin-1-'+str(ii)].sets['Set-RP']
 			self.model.RigidBody(name='RIGID-'+ 'Part-Ball-Lin-'+str(ii), refPointRegion=region1, 
 				bodyRegion=region2)
-		# for instance in self.tools:
-			# a = self.model.rootAssembly
-			# region2=a.instances[instance.partName+'-1'].sets['Set-Body']
-			# a = self.model.rootAssembly
-			# region1=a.instances[instance.partName+'-1'].sets['Set-RP']
-			# self.model.RigidBody(name='RIGID-'+ instance.partName, refPointRegion=region1, 
-				# bodyRegion=region2)
-				
-		# for instance in self.innertools:
-			# a = self.model.rootAssembly
-			# region2=a.instances[instance.partName+'-1'].sets['Set-Body']
-			# a = self.model.rootAssembly
-			# region1=a.instances[instance.partName+'-1'].sets['Set-RP']
-			# self.model.RigidBody(name='RIGID-'+ instance.partName, refPointRegion=region1, 
-				# bodyRegion=region2)
+	
 				
 	def interactions(self,inits,args):
 		a = self.model.rootAssembly
@@ -664,20 +479,6 @@ class BendAssembly(Assembly):
 			positionToleranceMethod=COMPUTED, adjust=ON, tieRotations=ON, 
 			thickness=ON,constraintEnforcement=SURFACE_TO_SURFACE)
 			
-		frictionBig = inits['0.5']
-		frictionSmall = inits['0.125']
-		self.model.ContactProperty('IntProp-BIG')
-		self.model.interactionProperties['IntProp-BIG'].TangentialBehavior(
-			formulation=PENALTY, directionality=ISOTROPIC, slipRateDependency=OFF, 
-			pressureDependency=OFF, temperatureDependency=OFF, dependencies=0, 
-			table=((frictionBig, ), ), shearStressLimit=None, maximumElasticSlip=FRACTION, 
-			fraction=0.005, elasticSlipStiffness=None)
-		self.model.ContactProperty('IntProp-SMALL')
-		self.model.interactionProperties['IntProp-SMALL'].TangentialBehavior(
-			formulation=PENALTY, directionality=ISOTROPIC, slipRateDependency=OFF, 
-			pressureDependency=OFF, temperatureDependency=OFF, dependencies=0, 
-			table=((frictionSmall, ), ), shearStressLimit=None, 
-			maximumElasticSlip=FRACTION, fraction=0.005, elasticSlipStiffness=None)
 		a = self.model.rootAssembly
 		INTINDEX = 0
 		for instance in self.tools:
@@ -686,7 +487,7 @@ class BendAssembly(Assembly):
 			self.model.interactionProperties['IntProp-'+instance.partName].TangentialBehavior(
 				formulation=PENALTY, directionality=ISOTROPIC, slipRateDependency=OFF, 
 				pressureDependency=OFF, temperatureDependency=OFF, dependencies=0, 
-				table=((frictionSmall, ), ), shearStressLimit=None, 
+				table=((f, ), ), shearStressLimit=None, 
 				maximumElasticSlip=FRACTION, fraction=f, elasticSlipStiffness=None)
 			region1=a.instances[instance.partName+'-1'].surfaces['Surf-Outer']
 			region2=a.instances[self.parts[0].partName+'-1'].surfaces['Surf-Outer']
@@ -703,7 +504,7 @@ class BendAssembly(Assembly):
 			self.model.interactionProperties['IntProp-'+instance.partName].TangentialBehavior(
 				formulation=PENALTY, directionality=ISOTROPIC, slipRateDependency=OFF, 
 				pressureDependency=OFF, temperatureDependency=OFF, dependencies=0, 
-				table=((frictionSmall, ), ), shearStressLimit=None, 
+				table=((f, ), ), shearStressLimit=None, 
 				maximumElasticSlip=FRACTION, fraction=f, elasticSlipStiffness=None)
 			region1=a.instances[instance.partName+'-1'].surfaces['Surf-Outer']
 			region2=a.instances[self.parts[0].partName+'-1'].surfaces['Surf-Inner']
@@ -849,7 +650,7 @@ class BendAssembly(Assembly):
 		regionDef0=self.model.rootAssembly.allInstances[self.parts[0].partName+'-1'].sets['Set-Body']
 		self.model.ExplicitDynamicsStep(name='Step-1', previous='Initial', 
 			timePeriod=0.05,\
-			massScaling=((SEMI_AUTOMATIC, regionDef0, AT_BEGINNING, 10.0, 0.0, None, \
+			massScaling=((SEMI_AUTOMATIC, regionDef0, AT_BEGINNING, 10., 0.0, None, \
 			0, 0, 0.0, 0.0, 0, None), ))
 		self.model.fieldOutputRequests['F-Output-1'].setValues(variables=(
 			'S', 'SVAVG', 'PE', 'PEVAVG', 'PEEQ', 'PEEQVAVG', 'LE', 'U', 'V', 'A', 
@@ -894,7 +695,7 @@ class TubeSP(Springback):
 from FEA import * 
 from TubeSP import TubeSP
 from ProfileFit import *
-
+import random
 class TBFEA(FEA):
 	def setParameter(self,shapes,materials,positions,inits,\
 		steps,BCs,Loads,meshSize,args):	
@@ -919,22 +720,41 @@ class TBFEA(FEA):
 		pass
 		
 		
-tools = [7.85e-9,210000.0,.3]
-parts = [7.85e-9,210000.0,.3,750.0,.06,.24,1.0]		
+
 
 paramFile = open('result.txt','a+')
-paramFile.write('Out R Thick E K n angle springback\n')
+paramFile.write('R D Thick angle E K e0 n m d e g j assist minTh springback Ell Wrinkle\n')
 paramFile.close()
 for jj in range(5,6):
 		modelname='Model-'+str(jj)+'-'+str(1)
 		t = TBFEA(modelname)
-		inits={'0.5':.5,'0.125':.125}
 		
 		Load={'Press':30000}
-		shapes = {'bendR':200.0,'outDiameter':60.,'thick':1.5,'toolGap':0.1,'ballGap':.5,'ballThick':20.}
+		bendR = float(random.randint(140,200))
+		outDiameter = float(random.randint(70,100))
+		angle = float(random.randint(5,90))
+		thick = random.uniform(1.0,3.)
+		ballGap = random.uniform(.5,1.5)
+		
+		ballNum = random.randint(3,7)
+		ballThick = random.uniform(.24,.3) * outDiameter
+		mandralOut = random.uniform(5.,7.)
+		assist = random.uniform(.9,1.2)
+		
+		if outDiameter < 80:
+			ball2ball = random.uniform(.7,1.1) * ballThick
+		else :
+			ball2ball = random.uniform(1.,1.3) * ballThick
+		E = float(random.randint(170,220)) * 1000
+		K = float(random.randint(750,850))
+		e0 = random.uniform(.02,0.05)
+		n = random.uniform(.2,.27)
+		tools = [7.85e-9,210000.0,.3]
+		parts = [7.85e-9,E,.3,K,e0,n,1.0]		
+		shapes = {'bendR':bendR,'outDiameter':outDiameter,'thick':thick,'toolGap':0.1,'ballGap':ballGap,'ballThick':ballThick}
 		meshSize = {'pressDie':6,'tube':5}
-		BCs={'angle':float(jj)* 15.0/180.0*pi,'close':shapes['outDiameter']/2}
-		arg={'assist':1.0,'mandralOut':3.,'ball2ball':5.,'ballNum':5,'bendR':shapes['bendR'],\
+		BCs={'angle':angle/180.0*pi,'close':shapes['outDiameter']/2}
+		arg={'assist':assist,'mandralOut':mandralOut,'ball2ball':ball2ball,'ballNum':ballNum,'bendR':shapes['bendR'],\
 			'outDiameter':shapes['outDiameter'],'thickness':shapes['thick'],'meshSize':meshSize['tube']}
 		positions = {'clamp':(-BCs['close'],0,-shapes['bendR']+shapes['outDiameter']/2),'insert':(.0,0.,-shapes['bendR']+shapes['outDiameter']/2),\
 			'press':(-BCs['close'],0.,0.),\
@@ -943,22 +763,24 @@ for jj in range(5,6):
 		material={'tool':tools,'part':parts}
 		
 		
-		t.setParameter(shapes,material,positions,inits,\
+		t.setParameter(shapes,material,positions,0,\
 			2,BCs,Load,meshSize,arg)
 		t.setModels()
-		modelsp=modelname+'-SP'
-		init=solveArray(modelname,arg)
-		springback=solveArray(modelsp,arg)
-		minTh,wrinkle = getThickandWrinkle(modelsp,arg)
-		
+		# modelsp=modelname+'-SP'
+		# init=solveArray(modelname,arg)
+		# springback=solveArray(modelsp,arg)
+		# minTh,wrinkle = getThickandWrinkle(modelsp,arg)
+		# ell = getSection(modelsp,arg)
 		#initial paramters
-		strR =str(int(shapes['bendR']))
-		strOut=str(int(shapes['outDiameter']))
-		strThick=str(int(shapes['thick']*100))
-		strA=str(int(arg['assist']*10))
-		strK=str(int(parts[3]))
-		strN=str(int(parts[5]*100))
-		paramFile = open('result.txt','a+')
-		paramFile.write('%10.6E %10.6E %10.6E %10.6E %10.6E %10.6E %10.6E %10.6E %10.6E %s\n '%(shapes['bendR'],shapes['outDiameter'],shapes['thick']\
-			 ,parts[1],parts[3],parts[5],init,springback,minTh,wrinkle))
-		paramFile.close()
+	
+		# paramFile = open('result.txt','a+')
+		
+		# paramFile.write('%10.3E %10.3E %10.3E %10.3E\
+			# %10.3E %10.3E %10.3E %10.3E\
+			# %10.3E %10.3E %10.3E %10.3E %10.3E %10.3E\
+			# %10.3E %10.3E %10.3E %s\n'\
+			# %(shapes['bendR'],shapes['outDiameter'],shapes['thick'],init,\
+			# parts[1],parts[3],parts[4],parts[5],\
+			# ballNum,ballThick,mandralOut,ballGap,ball2ball,assist,\
+			# minTh,springback,ell,wrinkle))
+		# paramFile.close()

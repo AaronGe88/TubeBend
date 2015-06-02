@@ -4,6 +4,7 @@ from part import *
 from odbAccess import *
 from abaqus import *
 from abaqusConstants import *
+
 class TBPost(PostProcess):
 	def __init__(self,modelname):
 		self.part = None
@@ -56,6 +57,26 @@ class TBPost(PostProcess):
 		else:
 			wrinkle = False
 		return self.endSection,self.headSection,minTh.data,wrinkle
+		
+	def err(p,y,x):
+		rx,ry, a, b = p
+		yy = ((1 - (x + rx)**2 / a ** 2)*b*b)**2 ** .5 ** .5 - ry
+		err = y - yy 
+		return err
+		
+	def section(self,args):
+		bendR = args['bendR']
+		R = args['outDiameter']/2
+		meshSize = args['meshSize']
+		instance = self.odb.rootAssembly.instances['PART-TUBE-1']
+		coords=self.frame.fieldOutputs['COORD']
+		tubeCoords = coords.getSubset(region=instance)
+		section = []
+		for cc in tubeCoords.values:
+			if cc.data[2] > 0 and cc.data[2]< meshSize :
+				section.append(cc)
+		return section
+		
 # shapes={'bendR':220,'outDiameter':40}		
 # BC = {'angle':0.5}	
 # tb = TBPost('Model-40-1')

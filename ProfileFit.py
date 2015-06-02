@@ -3,29 +3,12 @@ from scipy.linalg import lstsq
 import numpy as np
 import math
 from TBPost import *
-# def err(p,args):
-	# errs=[]
-	# angle,r=p
-	# tbPost=TBPost(args['modelname'])
-	# tbPost.setPart('PART-TUBE-1')
-	# coords=tbPost.output(args)
-	# k,v=coords.popitem()
-	# x0,y0,z0=v
-	# m=np.cos(angle)
-	# p=np.sin(angle)
-	# for coord in coords.iteritems():
-		# key,value = coord
-		# print key
-		# x,y,z=value
-		# err=r**2-(p*(y-y0))**2-(m*(z-z0)-p*(x-x0))**2-(-m*(y-y0))**2
-		# errs.append(err)
-	# return np.array(errs)
 	
 def solveArray(modelname,args):
 	tbPost=TBPost(modelname)
 	tbPost.setPart('PART-TUBE-1')
-	endCoords,headCoords=tbPost.output(args)
-	tbPost.close()
+	endCoords,headCoords,a,b=tbPost.output(args)
+	
 	ae=[]
 	be=[]
 	ah=[]
@@ -38,6 +21,7 @@ def solveArray(modelname,args):
 		
 	npa=np.array(ae)
 	npb=np.array(be)
+	tbPost.close()
 	xe,ye,ze,we=lstsq(npa,npb)
 
 	for coord in headCoords.iteritems():
@@ -55,6 +39,7 @@ def solveArray(modelname,args):
 	Lxh=np.sqrt(xhh.dot(xhh))
 	cos_angle=xee.dot(xhh)/(Lxe*Lxh)
 	angle=np.arccos(cos_angle)
+	
 	print angle / math.pi * 180
 	return angle / math.pi * 180
 
@@ -62,8 +47,36 @@ def getThickandWrinkle(modelname,args):
 	tbPost=TBPost(modelname)
 	tbPost.setPart('PART-TUBE-1')
 	endCoords,headCoords,thMin,wrinkle=tbPost.output(args)
+	
 	return 	thMin,wrinkle
-
+	
+def getSection(modelname,args):
+	tbPost=TBPost(modelname)
+	tbPost.setPart('PART-TUBE-1')
+	section=tbPost.section(args)
+	
+	bendR = args['bendR']
+	R = args['outDiameter']/2
+	meshSize = args['meshSize']
+	xs = []
+	ys = []
+	for ii in section:
+		x = ii.data[0]
+		y = ii.data[1]
+		xx = [x**2,y**2,x*y,x,1]
+		yy = [-y]
+		xs.append(xx)
+		ys.append(yy)
+	axs = array(xs)
+	ays = array(ys)
+	xe,ye,ze,we=lstsq(axs,ays)
+	A,B,C,D,F = xe
+	right = D ** 2 / 4 / A  + 1 / 4 / B - F
+	long = (right / B) **.5
+	short = (right / A) **.5
+	ell = (R - short)/R
+	return 	ell
+	
 # modelname= 'Model-40-1-SP'
 # args={'modelname':modelname,'angle':1.0,}
 # x=solveArray(modelname,args)
