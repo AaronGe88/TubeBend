@@ -515,15 +515,16 @@ class BendAssembly(Assembly):
 				clearanceRegion=None)
 			INTINDEX = INTINDEX + 1
 		#Ð¾Çò
-		for ii in range(2,args['ballNum']+1):
-			region1 = a.instances['Part-Ball-1-lin-1-'+str(ii)].surfaces['Surf-Outer']
-			region2=a.instances[self.parts[0].partName+'-1'].surfaces['Surf-Inner']
-			self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
-				createStepName='Step-1', master = region1, slave = region2, 
-				mechanicalConstraint=PENALTY, sliding=FINITE, 
-				interactionProperty='IntProp-Part-Ball', initialClearance=OMIT, datumAxis=None, 
-				clearanceRegion=None)
-			INTINDEX = INTINDEX + 1
+		if (args['ballNum'] > 1):
+			for ii in range(2,args['ballNum']+1):
+				region1 = a.instances['Part-Ball-1-lin-1-'+str(ii)].surfaces['Surf-Outer']
+				region2=a.instances[self.parts[0].partName+'-1'].surfaces['Surf-Inner']
+				self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
+					createStepName='Step-1', master = region1, slave = region2, 
+					mechanicalConstraint=PENALTY, sliding=FINITE, 
+					interactionProperty='IntProp-Part-Ball', initialClearance=OMIT, datumAxis=None, 
+					clearanceRegion=None)
+				INTINDEX = INTINDEX + 1
 			
 		region1=a.instances['Part-Mandrel-1'].surfaces['Surf-Outer']
 		region2=a.instances['Part-Ball-1'].surfaces['Surf-Outer']
@@ -542,16 +543,16 @@ class BendAssembly(Assembly):
 			interactionProperty='IntProp-Part-Ball', initialClearance=OMIT, datumAxis=None, 
 			clearanceRegion=None)
 		INTINDEX = INTINDEX + 1
-		
-		for ii in range(2,args['ballNum']):
-			region1=a.instances['Part-Ball-1-lin-1-'+str(ii)].surfaces['Surf-Outer']
-			region2=a.instances['Part-Ball-1-lin-1-'+str(ii+1)].surfaces['Surf-Outer']
-			self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
-				createStepName='Step-1', master = region1, slave = region2, 
-				mechanicalConstraint=PENALTY, sliding=FINITE, 
-				interactionProperty='IntProp-Part-Ball', initialClearance=OMIT, datumAxis=None, 
-				clearanceRegion=None)
-			INTINDEX = INTINDEX + 1
+		if (args['ballNum'] > 1):
+			for ii in range(2,args['ballNum']):
+				region1=a.instances['Part-Ball-1-lin-1-'+str(ii)].surfaces['Surf-Outer']
+				region2=a.instances['Part-Ball-1-lin-1-'+str(ii+1)].surfaces['Surf-Outer']
+				self.model.SurfaceToSurfaceContactExp(name ='Int-'+str(INTINDEX), 
+					createStepName='Step-1', master = region1, slave = region2, 
+					mechanicalConstraint=PENALTY, sliding=FINITE, 
+					interactionProperty='IntProp-Part-Ball', initialClearance=OMIT, datumAxis=None, 
+					clearanceRegion=None)
+				INTINDEX = INTINDEX + 1
 			
 		self.model.ConnectorSection(name='ConnSect-1', 
 			translationalType=LINK)
@@ -579,19 +580,20 @@ class BendAssembly(Assembly):
 		a.Set(edges=edges1, name='Wire-2-Set-1')
 		region = self.model.rootAssembly.sets['Wire-2-Set-1']
 		csa = a.SectionAssignment(sectionName='ConnSect-1', region=region)
-		for ii in range(2,args['ballNum']):
-			r1 = a.instances['Part-Ball-1-lin-1-'+str(ii)].referencePoints
-			r2 = a.instances['Part-Ball-1-lin-1-'+str(ii+1)].referencePoints
-			wire = a.WirePolyLine(points=((r1[5], r2[5]), ), mergeType=IMPRINT, 
-				meshable=False)
-			oldName = wire.name
-			a.features.changeKey(fromName=oldName, 
-				toName='Wire-'+str(ii+1))
-			e1 = a.edges
-			edges1 = e1.getSequenceFromMask(mask=('[#1 ]', ), )
-			a.Set(edges=edges1, name='Wire-'+str(ii+1)+'-Set-1')
-			region = a.sets['Wire-'+str(ii+1)+'-Set-1']
-			csa = a.SectionAssignment(sectionName='ConnSect-1', region=region)
+		if (args['ballNum'] > 1):
+			for ii in range(2,args['ballNum']):
+				r1 = a.instances['Part-Ball-1-lin-1-'+str(ii)].referencePoints
+				r2 = a.instances['Part-Ball-1-lin-1-'+str(ii+1)].referencePoints
+				wire = a.WirePolyLine(points=((r1[5], r2[5]), ), mergeType=IMPRINT, 
+					meshable=False)
+				oldName = wire.name
+				a.features.changeKey(fromName=oldName, 
+					toName='Wire-'+str(ii+1))
+				e1 = a.edges
+				edges1 = e1.getSequenceFromMask(mask=('[#1 ]', ), )
+				a.Set(edges=edges1, name='Wire-'+str(ii+1)+'-Set-1')
+				region = a.sets['Wire-'+str(ii+1)+'-Set-1']
+				csa = a.SectionAssignment(sectionName='ConnSect-1', region=region)
 		
 		
 		
@@ -725,7 +727,7 @@ class TBFEA(FEA):
 paramFile = open('result.txt','a+')
 paramFile.write('R D Thick angle E K e0 n m d e g j assist minTh springback Ell Wrinkle\n')
 paramFile.close()
-for jj in range(5,6):
+for jj in range(7,15):
 		modelname='Model-'+str(jj)+'-'+str(1)
 		t = TBFEA(modelname)
 		
@@ -734,9 +736,9 @@ for jj in range(5,6):
 		outDiameter = float(random.randint(70,100))
 		angle = float(random.randint(5,90))
 		thick = random.uniform(1.0,3.)
-		ballGap = random.uniform(.5,1.5)
+		ballGap = random.uniform(.3,.8)
 		
-		ballNum = random.randint(3,7)
+		ballNum = random.randint(1,5)
 		ballThick = random.uniform(.24,.3) * outDiameter
 		mandralOut = random.uniform(5.,7.)
 		assist = random.uniform(.9,1.2)
@@ -766,21 +768,21 @@ for jj in range(5,6):
 		t.setParameter(shapes,material,positions,0,\
 			2,BCs,Load,meshSize,arg)
 		t.setModels()
-		# modelsp=modelname+'-SP'
-		# init=solveArray(modelname,arg)
-		# springback=solveArray(modelsp,arg)
-		# minTh,wrinkle = getThickandWrinkle(modelsp,arg)
-		# ell = getSection(modelsp,arg)
+		modelsp=modelname+'-SP'
+		init=solveArray(modelname,arg)
+		springback=solveArray(modelsp,arg)
+		minTh,wrinkle = getThickandWrinkle(modelsp,arg)
+		ell = getSection(modelsp,arg)
 		#initial paramters
 	
-		# paramFile = open('result.txt','a+')
+		paramFile = open('result.txt','a+')
 		
-		# paramFile.write('%10.3E %10.3E %10.3E %10.3E\
-			# %10.3E %10.3E %10.3E %10.3E\
-			# %10.3E %10.3E %10.3E %10.3E %10.3E %10.3E\
-			# %10.3E %10.3E %10.3E %s\n'\
-			# %(shapes['bendR'],shapes['outDiameter'],shapes['thick'],init,\
-			# parts[1],parts[3],parts[4],parts[5],\
-			# ballNum,ballThick,mandralOut,ballGap,ball2ball,assist,\
-			# minTh,springback,ell,wrinkle))
-		# paramFile.close()
+		paramFile.write('%10.3E %10.3E %10.3E %10.3E\
+			%10.3E %10.3E %10.3E %10.3E\
+			%10.3E %10.3E %10.3E %10.3E %10.3E %10.3E\
+			%10.3E %10.3E %10.3E %s\n'\
+			%(shapes['bendR'],shapes['outDiameter'],shapes['thick'],init,\
+			parts[1],parts[3],parts[4],parts[5],\
+			ballNum,ballThick,mandralOut,ballGap,ball2ball,assist,\
+			minTh,springback,ell,wrinkle))
+		paramFile.close()
