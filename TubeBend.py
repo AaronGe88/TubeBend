@@ -464,11 +464,12 @@ class BendAssembly(Assembly):
 	def toolsRigid(self,args):
 		Assembly.toolsRigid(self,args)
 		a = self.model.rootAssembly
-		for ii in range(2,args['ballNum']+1):
-			region2 = a.instances['Part-Ball-1-lin-1-'+str(ii)].sets['Set-Body']
-			region1 = a.instances['Part-Ball-1-lin-1-'+str(ii)].sets['Set-RP']
-			self.model.RigidBody(name='RIGID-'+ 'Part-Ball-Lin-'+str(ii), refPointRegion=region1, 
-				bodyRegion=region2)
+		if (args['ballNum']>1):
+			for ii in range(2,args['ballNum']+1):
+				region2 = a.instances['Part-Ball-1-lin-1-'+str(ii)].sets['Set-Body']
+				region1 = a.instances['Part-Ball-1-lin-1-'+str(ii)].sets['Set-RP']
+				self.model.RigidBody(name='RIGID-'+ 'Part-Ball-Lin-'+str(ii), refPointRegion=region1, 
+					bodyRegion=region2)
 	
 				
 	def interactions(self,inits,args):
