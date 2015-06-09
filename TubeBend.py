@@ -728,7 +728,7 @@ class TBFEA(FEA):
 paramFile = open('result.txt','a+')
 paramFile.write('R D Thick angle E K e0 n m d e g j assist minTh springback Ell Wrinkle\n')
 paramFile.close()
-for jj in range(26,46):
+for jj in range(0,16):
 		modelname='Model-'+str(jj)+'-'+str(1)
 		t = TBFEA(modelname)
 		
@@ -779,10 +779,8 @@ for jj in range(26,46):
 		
 		paramFile.write('%10.3E %10.3E %10.3E %10.3E\
 			%10.3E %10.3E %10.3E %10.3E\
-			%10.3E %10.3E %10.3E %10.3E %10.3E %10.3E\
-			%10.3E %10.3E %10.3E %s\n'\
+			%10.3E %10.3E %10.3E %s\n'
 			%(shapes['bendR'],shapes['outDiameter'],shapes['thick'],init,\
 			parts[1],parts[3],parts[4],parts[5],\
-			ballNum,ballThick,mandralOut,ballGap,ball2ball,assist,\
 			minTh,springback,ell,wrinkle))
 		paramFile.close()
