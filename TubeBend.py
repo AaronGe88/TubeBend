@@ -728,7 +728,7 @@ class TBFEA(FEA):
 paramFile = open('result.txt','a+')
 paramFile.write('R D Thick angle E K e0 n m d e g j assist minTh springback Ell Wrinkle\n')
 paramFile.close()
-for jj in range(7,15):
+for jj in range(26,46):
 		modelname='Model-'+str(jj)+'-'+str(1)
 		t = TBFEA(modelname)
 		
@@ -737,20 +737,19 @@ for jj in range(7,15):
 		outDiameter = float(random.randint(70,100))
 		angle = float(random.randint(5,90))
 		thick = random.uniform(1.0,3.)
-		ballGap = random.uniform(.3,.8)
+		ballGap = .8
 		
-		ballNum = random.randint(1,5)
-		ballThick = random.uniform(.24,.3) * outDiameter
-		mandralOut = random.uniform(5.,7.)
-		assist = random.uniform(.9,1.2)
+		ballNum = 5
+		ballThick = .3 * outDiameter
+		mandralOut = (2 * (bendR + outDiameter/2) * ballGap / 2 - (ballGap / 2)**2)**.5
+		assist = 1.
 		
-		if outDiameter < 80:
-			ball2ball = random.uniform(.7,1.1) * ballThick
-		else :
-			ball2ball = random.uniform(1.,1.3) * ballThick
+		
+		ball2ball = .5 * ballThick
+
 		E = float(random.randint(170,220)) * 1000
 		K = float(random.randint(750,850))
-		e0 = random.uniform(.02,0.05)
+		e0 = random.uniform(.02,0.1)
 		n = random.uniform(.2,.27)
 		tools = [7.85e-9,210000.0,.3]
 		parts = [7.85e-9,E,.3,K,e0,n,1.0]		
