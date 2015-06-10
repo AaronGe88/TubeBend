@@ -760,7 +760,7 @@ for jj in range(0,1):
 			'outDiameter':shapes['outDiameter'],'thickness':shapes['thick'],'meshSize':meshSize['tube']}
 		positions = {'clamp':(-BCs['close'],0,-shapes['bendR']+shapes['outDiameter']/2),'insert':(.0,0.,-shapes['bendR']+shapes['outDiameter']/2),\
 			'press':(-BCs['close'],0.,0.),\
-			'tube':(0,0,-shapes['bendR']-shapes['outDiameter']/2-30),'ball':(-shapes['bendR'],0,-arg['ball2ball']-arg['mandralOut']-shapes['ballThick']/2),\
+			'tube':(0,0,-shapes['bendR']-shapes['outDiameter'] * 1.5),'ball':(-shapes['bendR'],0,-arg['ball2ball']-arg['mandralOut']-shapes['ballThick']/2),\
 			'mandral':(0,0,-arg['mandralOut']),'wiper':0.5}
 		material={'tool':tools,'part':parts}
 		
