@@ -726,9 +726,9 @@ class TBFEA(FEA):
 
 
 paramFile = open('result.txt','a+')
-paramFile.write('R D Thick angle E K e0 n m d e g j assist minTh springback Ell Wrinkle\n')
+paramFile.write('R D Thick angle E K e0 n minTh springback Ell Wrinkle\n')
 paramFile.close()
-for jj in range(0,16):
+for jj in range(0,1):
 		modelname='Model-'+str(jj)+'-'+str(1)
 		t = TBFEA(modelname)
 		
@@ -760,7 +760,7 @@ for jj in range(0,16):
 			'outDiameter':shapes['outDiameter'],'thickness':shapes['thick'],'meshSize':meshSize['tube']}
 		positions = {'clamp':(-BCs['close'],0,-shapes['bendR']+shapes['outDiameter']/2),'insert':(.0,0.,-shapes['bendR']+shapes['outDiameter']/2),\
 			'press':(-BCs['close'],0.,0.),\
-			'tube':(0,0,-shapes['bendR']-shapes['outDiameter']/2),'ball':(-shapes['bendR'],0,-arg['ball2ball']-arg['mandralOut']-shapes['ballThick']/2),\
+			'tube':(0,0,-shapes['bendR']-shapes['outDiameter']/2-30),'ball':(-shapes['bendR'],0,-arg['ball2ball']-arg['mandralOut']-shapes['ballThick']/2),\
 			'mandral':(0,0,-arg['mandralOut']),'wiper':0.5}
 		material={'tool':tools,'part':parts}
 		
